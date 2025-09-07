@@ -5,6 +5,7 @@ import mimetypes
 import base64
 import os
 from dotenv import load_dotenv
+from PIL import Image
 
 load_dotenv()
 
@@ -25,6 +26,30 @@ def save_binary_file(file_name, data):
         print(f"File saved to: {file_name}")
     except Exception as e:
         print(f"Error saving file {file_name}: {e}")
+
+def crop_center_to_16x9(input_path, output_path=None):
+    try:
+        image = Image.open(input_path)
+        width, height = image.size
+        target_ratio = 16 / 9
+
+        if width / height > target_ratio:
+            new_width = int(height * target_ratio)
+            left = (width - new_width) // 2
+            crop_box = (left, 0, left + new_width, height)
+        else:
+            new_height = int(width / target_ratio)
+            top = (height - new_height) // 2
+            crop_box = (0, top, width, top + new_height)
+
+        cropped = image.crop(crop_box)
+        if not output_path:
+            base, ext = os.path.splitext(input_path)
+            output_path = f"{base}_16x9{ext}"
+        cropped.save(output_path)
+        print(f"Saved 16:9 crop to: {output_path}")
+    except Exception as e:
+        print(f"Error cropping to 16:9 for {input_path}: {e}")
 
 def generate(prompt, file_number):
     try:
@@ -67,6 +92,7 @@ def generate(prompt, file_number):
                 file_name = f"images/{file_number}{file_extension}"
                 file_index += 1
                 save_binary_file(file_name, data_buffer)
+                crop_center_to_16x9(file_name)
             #else:
                 #print(chunk.text)
     except Exception as e:
